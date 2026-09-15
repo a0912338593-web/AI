@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>疯狂动物城 · 课堂积分表</title>
+<style>
+  :root{
+    --c1:#7b4dff; --c2:#ff8a3d; --c3:#ffd23f; --c4:#2ec4b6;
+    --c5:#ff5d8f; --c6:#3bb4a5; --c7:#ffb142; --c8:#9b59b6;
+    --c9:#e74c3c; --c10:#1abc9c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Microsoft YaHei","PingFang SC",sans-serif;}
+  html,body{height:100%;}
+  body{
+    height:100vh;
+    background:linear-gradient(135deg,#6a5acd 0%,#ff6f91 45%,#ffd23f 100%);
+    background-attachment:fixed;
+    overflow-x:hidden;
+    color:#fff;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+  }
+  /* 背景飘浮的爪印 */
+  .paws{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .paw{position:absolute;font-size:40px;opacity:.12;animation:float 12s linear infinite;}
+  @keyframes float{
+    0%{transform:translateY(110vh) rotate(0deg);}
+    100%{transform:translateY(-20vh) rotate(360deg);}
+  }
+  h1{
+    text-align:center;font-size:42px;margin:10px 0 6px;
+    text-shadow:3px 3px 0 #00000055,0 0 18px #ffffff66;
+    letter-spacing:2px;
+  }
+  .subtitle{text-align:center;font-size:16px;opacity:.95;margin-bottom:18px;}
+  /* ===== 设置界面 ===== */
+  .setup{
+    max-width:560px;margin:40px auto;background:#ffffff22;
+    backdrop-filter:blur(8px);border:3px solid #ffffff66;
+    border-radius:26px;padding:34px 28px;text-align:center;
+    box-shadow:0 18px 50px #00000044;position:relative;z-index:1;
+  }
+  .setup h2{font-size:24px;margin-bottom:18px;}
+  .emoji-row{font-size:46px;letter-spacing:8px;margin-bottom:14px;animation:wave 2s ease-in-out infinite;}
+  @keyframes wave{0%,100%{transform:rotate(-6deg);}50%{transform:rotate(6deg);}}
+  .setup label{display:block;font-size:18px;margin-bottom:8px;}
+  .setup input{
+    width:120px;height:64px;font-size:34px;text-align:center;
+    border:4px solid #fff;border-radius:16px;background:#fff;color:#7b4dff;
+    font-weight:bold;outline:none;box-shadow:0 6px 0 #00000033;
+  }
+  .setup input:focus{border-color:#ffd23f;}
+  .stepper{display:flex;gap:10px;justify-content:center;align-items:center;margin:14px 0;}
+  .stepper button{
+    width:48px;height:48px;border:none;border-radius:50%;
+    background:#fff;color:#7b4dff;font-size:28px;font-weight:bold;
+    cursor:pointer;box-shadow:0 4px 0 #00000033;transition:transform .1s;
+  }
+  .stepper button:active{transform:translateY(3px);box-shadow:0 1px 0 #00000033;}
+  .btn{
+    border:none;cursor:pointer;font-weight:bold;color:#fff;
+    border-radius:16px;padding:14px 30px;font-size:20px;
+    box-shadow:0 5px 0 #00000044;transition:transform .1s,box-shadow .1s;
+    margin:6px;
+  }
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #00000044;}
+  .btn-go{background:linear-gradient(135deg,#2ec4b6,#7b4dff);}
+  .btn-back{background:#888;}
+  .btn-clear{background:linear-gradient(135deg,#ff5d8f,#e74c3c);}
+  .btn-save{background:linear-gradient(135deg,#ffd23f,#ff8a3d);}
+  .btn-honor{background:linear-gradient(135deg,#ffb300,#ff6f00);}
+  .hint{font-size:13px;opacity:.85;margin-top:10px;}
+  /* ===== 积分界面 ===== */
+  .toolbar{
+    max-width:1240px;margin:0 auto 18px;display:flex;flex-wrap:wrap;gap:10px;
+    justify-content:center;align-items:center;position:relative;z-index:1;
+  }
+  /* 计分模式：压缩页眉，让积分板占满整个画面 */
+  body.playing{padding:10px 14px;overflow:hidden;}
+  body.playing h1{font-size:30px;margin:4px 0 2px;}
+  body.playing .subtitle{font-size:14px;margin-bottom:8px;}
+  body.playing .toolbar{margin-bottom:10px;}
+  body.playing .btn{padding:9px 22px;font-size:17px;margin:3px;}
+  /* 积分板：每个小组一列，一列一列横向铺满整个画面 */
+  .scoreboard{
+    flex:1;min-height:0;width:100%;margin:0 auto;
+    display:grid;gap:16px;
+    grid-auto-flow:column;
+    grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));
+    position:relative;z-index:1;
+  }
+  .card{
+    border-radius:26px;padding:24px 20px;text-align:center;color:#fff;
+    box-shadow:0 10px 26px #00000055;position:relative;overflow:hidden;
+    border:3px solid #ffffff66;transition:transform .15s;
+    display:flex;flex-direction:column;height:100%;
+  }
+  .card:hover{transform:translateY(-4px);}
+  .card::before{
+    content:"";position:absolute;inset:0;background:
+      radial-gradient(circle at 20% 15%,#ffffff33,transparent 60%);
+  }
+  .card .avatar{font-size:84px;line-height:1;position:relative;z-index:1;animation:bob 3s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  .card .gname{font-size:23px;font-weight:bold;margin-top:6px;position:relative;z-index:1;}
+  .scoreboard{--medal-size:60px;}
+  .card .medals{
+    display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-content:flex-start;
+    margin:12px 0;min-height:72px;flex:1;overflow-y:auto;
+    padding:2px;position:relative;z-index:1;
+  }
+  .card .medal{
+    width:var(--medal-size);height:var(--medal-size);object-fit:contain;
+    filter:drop-shadow(0 2px 2px #00000055);
+  }
+  .card .medal.new{animation:medalpop .45s ease;}
+  @keyframes medalpop{0%{transform:scale(0) rotate(-30deg);}60%{transform:scale(1.35) rotate(8deg);}100%{transform:scale(1) rotate(0);}}
+  .card .no-medal{font-size:16px;opacity:.75;align-self:center;padding:12px 0;}
+  .controls{display:flex;gap:12px;justify-content:center;position:relative;z-index:1;flex-wrap:wrap;}
+  .ctl{
+    border:none;border-radius:16px;padding:13px 0;width:82px;font-size:26px;
+    font-weight:bold;cursor:pointer;color:#fff;box-shadow:0 4px 0 #00000044;
+    transition:transform .1s,box-shadow .1s;
+  }
+  .ctl:active{transform:translateY(3px);box-shadow:0 1px 0 #00000044;}
+  .ctl.plus{background:#fff;color:#2ec4b6;}
+  .rank-badge{
+    position:absolute;top:10px;right:12px;font-size:30px;z-index:2;
+    filter:drop-shadow(0 2px 3px #00000066);
+  }
+  /* 小组编号（左上角） */
+  .group-no{
+    position:absolute;top:10px;left:12px;z-index:2;
+    min-width:36px;height:36px;padding:0 9px;border-radius:18px;
+    background:#ffffffee;color:#444;font-size:19px;font-weight:bold;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 5px #00000044;
+  }
+  /* 冠军闪光 */
+  .card.lead{box-shadow:0 0 0 4px #ffd23f,0 12px 30px #00000066;animation:leadglow 1.6s ease-in-out infinite;}
+  @keyframes leadglow{0%,100%{box-shadow:0 0 0 4px #ffd23f,0 12px 30px #00000066;}50%{box-shadow:0 0 0 6px #fff,0 0 30px #ffd23f;}}
+  /* 小组较多（8~10列）时自动紧凑，保证整屏放得下 */
+  .scoreboard[data-cols="8"],.scoreboard[data-cols="9"],.scoreboard[data-cols="10"]{gap:10px;--medal-size:46px;}
+  .scoreboard[data-cols="8"] .card,.scoreboard[data-cols="9"] .card,.scoreboard[data-cols="10"] .card{padding:16px 8px;border-radius:18px;}
+  .scoreboard[data-cols="8"] .avatar,.scoreboard[data-cols="9"] .avatar,.scoreboard[data-cols="10"] .avatar{font-size:60px;}
+  .scoreboard[data-cols="8"] .gname,.scoreboard[data-cols="9"] .gname,.scoreboard[data-cols="10"] .gname{font-size:18px;}
+  .scoreboard[data-cols="8"] .group-no,.scoreboard[data-cols="9"] .group-no,.scoreboard[data-cols="10"] .group-no{min-width:28px;height:28px;padding:0 7px;border-radius:14px;font-size:15px;}
+  .scoreboard[data-cols="8"] .ctl,.scoreboard[data-cols="9"] .ctl,.scoreboard[data-cols="10"] .ctl{width:62px;font-size:20px;padding:10px 0;}
+  /* ===== 最终荣誉统计弹层 ===== */
+  .overlay{
+    position:fixed;inset:0;z-index:60;
+    background:rgba(28,14,58,.80);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;
+    padding:26px;overflow-y:auto;
+  }
+  .final-box{
+    width:min(980px,100%);margin:auto;
+    background:linear-gradient(135deg,#4a2f9e,#8a3d8f 55%,#c25e3a);
+    border:4px solid #ffd23f;border-radius:30px;
+    padding:32px 30px 28px;text-align:center;color:#fff;
+    box-shadow:0 0 0 6px #ffffff33,0 22px 60px #00000088;
+    animation:finalpop .5s cubic-bezier(.2,1.3,.4,1);
+    position:relative;
+  }
+  @keyframes finalpop{0%{transform:scale(.7);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .final-title{font-size:38px;letter-spacing:2px;margin-bottom:6px;text-shadow:3px 3px 0 #00000055,0 0 22px #ffd23f88;}
+  .final-sub{font-size:17px;opacity:.92;margin-bottom:22px;}
+  .winners{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-bottom:26px;}
+  .winner-card{
+    width:230px;border-radius:24px;padding:22px 16px 18px;
+    border:4px solid #ffd23f;color:#fff;position:relative;
+    box-shadow:0 0 26px #ffd23f99,0 12px 26px #00000066;
+    animation:winnershine 1.8s ease-in-out infinite;
+  }
+  @keyframes winnershine{0%,100%{box-shadow:0 0 18px #ffd23f77,0 12px 26px #00000066;}50%{box-shadow:0 0 38px #ffd23f,0 14px 30px #00000077;}}
+  .winner-card .w-crown{font-size:52px;line-height:1;animation:bob 2.4s ease-in-out infinite;}
+  .winner-card .w-no{
+    display:inline-block;margin-top:8px;background:#ffffffee;color:#5b3a00;
+    font-size:15px;font-weight:bold;border-radius:14px;padding:3px 14px;
+  }
+  .winner-card .w-avatar{font-size:72px;line-height:1;margin:8px 0 2px;}
+  .winner-card .w-name{font-size:24px;font-weight:bold;margin-bottom:8px;}
+  .winner-card .w-score{font-size:20px;background:#ffffff26;border-radius:14px;padding:7px 10px;}
+  .winner-card .w-score b{font-size:26px;color:#ffd23f;}
+  .tie-tip{font-size:16px;color:#ffe9a8;margin:-12px 0 20px;}
+  /* 总排名榜 */
+  .rank-list{max-width:680px;margin:0 auto 24px;display:flex;flex-direction:column;gap:10px;}
+  .rank-row{
+    display:flex;align-items:center;gap:14px;
+    background:#ffffff1f;border:2px solid #ffffff33;border-radius:16px;
+    padding:10px 18px;font-size:19px;
+  }
+  .rank-row.is-champ{background:#ffd23f33;border-color:#ffd23f;}
+  .rank-row .r-pos{width:52px;text-align:center;font-size:24px;flex:none;}
+  .rank-row .r-no{
+    flex:none;min-width:34px;height:30px;padding:0 9px;border-radius:15px;
+    background:#ffffffdd;color:#444;font-size:16px;font-weight:bold;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .rank-row .r-avatar{font-size:30px;flex:none;}
+  .rank-row .r-name{flex:1;text-align:left;font-weight:bold;}
+  .rank-row .r-score{font-size:18px;opacity:.95;flex:none;}
+  .rank-row .r-score b{color:#ffd23f;font-size:22px;}
+  .final-empty{font-size:22px;margin:30px 0 10px;opacity:.95;}
+  .hidden{display:none !important;}
+  /* 撒花 */
+  .confetti{position:fixed;top:0;font-size:24px;pointer-events:none;z-index:80;animation:fall linear forwards;}
+  @keyframes fall{0%{transform:translateY(0) rotate(0);opacity:1;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+  @media(max-width:520px){
+    h1{font-size:30px;}
+    body.playing{height:auto;min-height:100vh;overflow:visible;}
+    .setup{margin:10px auto;padding:24px 14px;}
+    .scoreboard{grid-auto-flow:row;grid-template-columns:1fr;gap:14px;flex:0 0 auto;--medal-size:48px;}
+    .card{padding:18px 14px;height:auto;}
+    .card .avatar{font-size:64px;}
+    .card .gname{font-size:20px;}
+    .card .medals{min-height:80px;max-height:260px;}
+    .ctl{width:72px;font-size:22px;padding:11px 0;}
+    .overlay{padding:14px;}
+    .final-box{padding:24px 16px 20px;}
+    .final-title{font-size:27px;}
+    .winner-card{width:200px;}
+    .rank-row{font-size:16px;padding:9px 12px;gap:10px;}
+    .rank-row .r-pos{width:40px;font-size:20px;}
+    .rank-row .r-avatar{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="paws" id="paws"></div>
+
+<h1>🦊 疯狂动物城 课堂积分表 🐰</h1>
+<div class="subtitle">— 和朱迪、尼克一起为小组加油 —</div>
+
+<!-- 设置界面 -->
+<div class="setup" id="setupScreen">
+  <div class="emoji-row">🐰🦊🐃🦥🐆</div>
+  <h2>请输入小组数量</h2>
+  <div class="stepper">
+    <button onclick="adj(-1)">➖</button>
+    <input id="groupCount" type="number" min="2" max="10" value="4" oninput="clampInput()">
+    <button onclick="adj(1)">➕</button>
+  </div>
+  <button class="btn btn-go" onclick="startGame()">开始计分 🚀</button>
+  <div class="hint">支持 2 ~ 10 个小组 · 每个小组将随机分配一位动物城角色</div>
+</div>
+
+<!-- 积分界面 -->
+<div class="toolbar hidden" id="toolbar">
+  <button class="btn btn-honor" onclick="showFinal()">🏆 最终荣誉</button>
+  <button class="btn btn-save" onclick="saveNow()">💾 保存</button>
+  <button class="btn btn-clear" onclick="clearAll()">🗑 清零</button>
+  <button class="btn btn-back" onclick="backToSetup()">⚙ 重新设置</button>
+</div>
+<div class="scoreboard hidden" id="board"></div>
+
+<!-- 最终荣誉统计弹层 -->
+<div class="overlay hidden" id="finalScreen">
+  <div class="final-box">
+    <div class="final-title" id="finalTitle">🏆 最终荣誉侦探小组 🏆</div>
+    <div class="final-sub">— 动物城警察局授予积分最高的侦探小组 —</div>
+    <div id="finalBody"></div>
+    <button class="btn btn-go" onclick="closeFinal()">↩ 返回继续计分</button>
+  </div>
+</div>
+
+<script>
+/* ===== 疯狂动物城角色 ===== */
+const ANIMALS = [
+  {name:"朱迪小队",emoji:"🐰",color:"var(--c1)",bg:"linear-gradient(135deg,#7b4dff,#b388ff)"},
+  {name:"尼克小队",emoji:"🦊",color:"var(--c2)",bg:"linear-gradient(135deg,#ff8a3d,#ff6f3d)"},
+  {name:"牛局长队",emoji:"🐃",color:"var(--c4)",bg:"linear-gradient(135deg,#2ec4b6,#3bb4a5)"},
+  {name:"闪电小队",emoji:"🦥",color:"var(--c7)",color2:"#8d6e63",bg:"linear-gradient(135deg,#a1887f,#8d6e63)"},
+  {name:"豹警官小队",emoji:"🐆",color:"var(--c3)",bg:"linear-gradient(135deg,#ffd23f,#ffb142)"},
+  {name:"狮市长小队",emoji:"🦁",color:"var(--c7)",bg:"linear-gradient(135deg,#ffb142,#ffd23f)"},
+  {name:"羊副市长队",emoji:"🐑",color:"var(--c6)",bg:"linear-gradient(135deg,#81c784,#3bb4a5)"},
+  {name:"大先生小队",emoji:"🐭",color:"var(--c8)",bg:"linear-gradient(135deg,#9b59b6,#7b4dff)"},
+  {name:"牦牛小队",emoji:"🐂",color:"var(--c9)",bg:"linear-gradient(135deg,#e74c3c,#ff5d8f)"},
+  {name:"鼹鼠小队",emoji:"🦔",color:"var(--c5)",bg:"linear-gradient(135deg,#ff5d8f,#9b59b6)"}
+];
+
+const STORE_KEY = "zootopia_scoreboard_v1";
+let groups = []; // {idx, animalIndex, score}
+
+/* ===== 背景爪印 ===== */
+function buildPaws(){
+  const box = document.getElementById('paws');
+  const arr = ["🐾","🐾","🐾"];
+  for(let i=0;i<14;i++){
+    const p = document.createElement('div');
+    p.className='paw';
+    p.textContent = arr[i%arr.length];
+    p.style.left = Math.random()*100+'%';
+    p.style.fontSize = (24+Math.random()*30)+'px';
+    p.style.animationDuration = (8+Math.random()*10)+'s';
+    p.style.animationDelay = (-Math.random()*12)+'s';
+    box.appendChild(p);
+  }
+}
+buildPaws();
+
+/* ===== 设置界面 ===== */
+function clampInput(){
+  const el = document.getElementById('groupCount');
+  let v = parseInt(el.value);
+  if(isNaN(v)) v=4;
+  v = Math.min(10,Math.max(2,v));
+  el.value = v;
+}
+function adj(d){
+  const el = document.getElementById('groupCount');
+  let v = parseInt(el.value)||4;
+  v = Math.min(10,Math.max(2,v+d));
+  el.value = v;
+}
+
+/* ===== 开始 ===== */
+function startGame(){
+  const n = parseInt(document.getElementById('groupCount').value)||4;
+  // 分配动物（按顺序，避免重复）
+  groups = [];
+  for(let i=0;i<n;i++){
+    groups.push({idx:i, animalIndex:i % ANIMALS.length, score:0});
+  }
+  save();
+  render();
+  closeFinal();
+  document.body.classList.add('playing');
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('toolbar').classList.remove('hidden');
+  document.getElementById('board').classList.remove('hidden');
+}
+
+/* ===== 渲染 ===== */
+function render(){
+  const board = document.getElementById('board');
+  board.innerHTML='';
+  // 每个小组一列，按列数平铺整个画面
+  board.style.setProperty('--cols', groups.length);
+  board.dataset.cols = groups.length;
+  // 找最高分
+  let max = -1;
+  groups.forEach(g=>{ if(g.score>max) max=g.score; });
+  groups.forEach(g=>{
+    const a = ANIMALS[g.animalIndex];
+    const isLead = max>0 && g.score===max;
+    // 一枚勋章代表一分
+    let medalsHtml;
+    if(g.score>0){
+      medalsHtml = '';
+      for(let i=0;i<g.score;i++) medalsHtml += '<img class="medal" src="勋章.png" alt="勋章">';
+    }else{
+      medalsHtml = '<div class="no-medal">暂未获得勋章</div>';
+    }
+    const card = document.createElement('div');
+    card.className = 'card'+(isLead?' lead':'');
+    card.style.background = a.bg;
+    card.innerHTML = `
+      <div class="group-no">${g.idx+1}</div>
+      ${isLead?'<div class="rank-badge">👑</div>':''}
+      <div class="avatar">${a.emoji}</div>
+      <div class="gname">${a.name}</div>
+      <div class="medals" id="score-${g.idx}">${medalsHtml}</div>
+      <div class="controls">
+        <button class="ctl plus" onclick="change(${g.idx},1)">+1</button>
+      </div>`;
+    board.appendChild(card);
+  });
+}
+
+/* ===== 加分（只加不减） ===== */
+function change(idx,delta){
+  const g = groups.find(x=>x.idx===idx);
+  if(!g) return;
+  g.score += delta;
+  // 整十撒花
+  if(g.score>0 && g.score%10===0) confetti();
+  save();
+  render();
+  // 新获得的勋章做弹跳动画
+  const box = document.getElementById('score-'+idx);
+  if(box && box.lastElementChild) box.lastElementChild.classList.add('new');
+}
+
+/* ===== 最终荣誉统计：权威口径=全部小组的 score，降序排名，最高分获奖 ===== */
+function getRanking(){
+  const sorted = groups.slice().sort((a,b)=> b.score-a.score || a.idx-b.idx);
+  let rank = 0;
+  return sorted.map((g,i)=>{
+    if(i===0 || g.score!==sorted[i-1].score) rank = i+1; // 平分并列同名次（1,1,3）
+    return {g, rank};
+  });
+}
+function showFinal(){
+  const ranking = getRanking();
+  const top = ranking.length ? ranking[0].g.score : 0;
+  const titleEl = document.getElementById('finalTitle');
+  const body = document.getElementById('finalBody');
+  if(top<=0){
+    titleEl.textContent = '🏅 积分统计';
+    body.innerHTML = '<div class="final-empty">还没有小组获得积分，快为各组加油加分吧～</div>';
+  }else{
+    const winners = ranking.filter(r=>r.g.score===top).map(r=>r.g);
+    titleEl.textContent = '🏆 最终荣誉侦探小组 🏆';
+    const winHtml = winners.map(g=>{
+      const a = ANIMALS[g.animalIndex];
+      return `<div class="winner-card" style="background:${a.bg}">
+        <div class="w-crown">👑</div>
+        <div class="w-no">第 ${g.idx+1} 组</div>
+        <div class="w-avatar">${a.emoji}</div>
+        <div class="w-name">${a.name}</div>
+        <div class="w-score">最终积分 <b>${g.score}</b> 分</div>
+      </div>`;
+    }).join('');
+    const tieTip = winners.length>1
+      ? `<div class="tie-tip">🎊 ${winners.length} 个小组并列第一，共同获得荣誉侦探小组称号！</div>` : '';
+    const medalFor = r => r===1?'🥇':r===2?'🥈':r===3?'🥉':r;
+    const rows = ranking.map(({g,rank})=>{
+      const a = ANIMALS[g.animalIndex];
+      return `<div class="rank-row${rank===1?' is-champ':''}">
+        <div class="r-pos">${medalFor(rank)}</div>
+        <div class="r-no">${g.idx+1}</div>
+        <div class="r-avatar">${a.emoji}</div>
+        <div class="r-name">${a.name}</div>
+        <div class="r-score"><b>${g.score}</b> 分</div>
+      </div>`;
+    }).join('');
+    body.innerHTML = `<div class="winners">${winHtml}</div>${tieTip}<div class="rank-list">${rows}</div>`;
+    confetti();
+    setTimeout(confetti,900);
+  }
+  document.getElementById('finalScreen').classList.remove('hidden');
+}
+function closeFinal(){
+  document.getElementById('finalScreen').classList.add('hidden');
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeFinal();
+});
+
+/* ===== 清零（带确认，避免误触丢失数据） ===== */
+function clearAll(){
+  if(!confirm("确定要把所有小组的积分清零吗？\n（此操作不可撤销哦～）")) return;
+  groups.forEach(g=>g.score=0);
+  closeFinal();
+  save();
+  render();
+}
+
+/* ===== 返回设置 ===== */
+function backToSetup(){
+  if(!confirm("返回设置界面会重新分配小组。\n是否先保存当前积分？（取消则直接返回）")){
+    // 用户取消=直接返回，但保留数据
+  }
+  // 数据已在 localStorage，保持不变
+  closeFinal();
+  document.body.classList.remove('playing');
+  document.getElementById('setupScreen').classList.remove('hidden');
+  document.getElementById('toolbar').classList.add('hidden');
+  document.getElementById('board').classList.add('hidden');
+  // 恢复上次的小组数量到输入框
+  if(groups.length) document.getElementById('groupCount').value = groups.length;
+}
+
+/* ===== 持久化：刷新/重开数据保持不变 ===== */
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({groups})); }catch(e){}
+}
+function saveNow(){
+  save();
+  flash("已保存 💾 数据不会丢失～");
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(data && Array.isArray(data.groups) && data.groups.length){
+      groups = data.groups;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* ===== 启动时自动恢复（保持数据不变） ===== */
+window.addEventListener('DOMContentLoaded',()=>{
+  if(load()){
+    render();
+    document.body.classList.add('playing');
+    document.getElementById('setupScreen').classList.add('hidden');
+    document.getElementById('toolbar').classList.remove('hidden');
+    document.getElementById('board').classList.remove('hidden');
+    document.getElementById('groupCount').value = groups.length;
+    flash("已恢复上次积分 ✨");
+  }
+});
+
+/* ===== 提示气泡 ===== */
+function flash(msg){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = "position:fixed;left:50%;top:20px;transform:translateX(-50%);background:#000000cc;color:#fff;padding:10px 20px;border-radius:12px;z-index:99;font-size:16px;box-shadow:0 6px 18px #00000066;";
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .4s'; },1200);
+  setTimeout(()=>t.remove(),1700);
+}
+
+/* ===== 撒花 ===== */
+function confetti(){
+  const icons = ["🎉","✨","⭐","🌟","🎊","🐾","🦊","🐰"];
+  for(let i=0;i<24;i++){
+    const c = document.createElement('div');
+    c.className='confetti';
+    c.textContent = icons[Math.floor(Math.random()*icons.length)];
+    c.style.left = Math.random()*100+'vw';
+    c.style.fontSize = (16+Math.random()*20)+'px';
+    c.style.animationDuration = (2+Math.random()*2)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),4500);
+  }
+}
+</script>
+</body>
+</html>
